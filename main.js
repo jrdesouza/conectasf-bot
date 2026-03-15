@@ -46,14 +46,44 @@
 //    app.quit();
 //});
 
-// main.js - Inicia o servidor embutido e abre a janela
-const { app, BrowserWindow } = require('electron');
+// main.js - Inicia o servidor embutido, abre a janela e gerencia atualizações
+const { app, BrowserWindow, dialog } = require('electron');
+const { autoUpdater } = require('electron-updater');
 
-// A MÁGICA ACONTECE AQUI:
-// O backend roda nativamente dentro do Electron. Adeus tela preta (terminal)!
+// Inicia o Backend Unificado
 require('./server.js');
 
 let mainWindow;
+
+// --- CONFIGURAÇÃO DO AUTO-UPDATER ---
+autoUpdater.autoDownload = true; // Baixa a atualização em segundo plano sozinho
+autoUpdater.autoInstallOnAppQuit = true; // Instala quando o app for fechado (se o usuário ignorar o aviso)
+
+// Evento: Quando encontra uma nova atualização
+autoUpdater.on('update-available', () => {
+    console.log('Nova atualização encontrada. Baixando em segundo plano...');
+});
+
+// Evento: Quando termina de baixar a atualização
+autoUpdater.on('update-downloaded', () => {
+    // Exibe um pop-up nativo do Windows avisando o cliente
+    dialog.showMessageBox(mainWindow, {
+        type: 'info',
+        title: 'Atualização Pronta',
+        message: 'Uma nova versão do ConectaSF Bot foi baixada!',
+        detail: 'O aplicativo será reiniciado agora para aplicar as melhorias.',
+        buttons:['Reiniciar e Atualizar']
+    }).then(() => {
+        // Fecha o app e instala a nova versão
+        autoUpdater.quitAndInstall(false, true);
+    });
+});
+
+// Evento: Se der algum erro (ex: sem internet), ele só ignora e o app segue normal
+autoUpdater.on('error', (err) => {
+    console.error('Erro no Auto-Updater:', err.message);
+});
+// ------------------------------------
 
 function loadAppURL(win) {
     win.loadURL('http://localhost:3000').catch(() => {
@@ -82,6 +112,12 @@ app.whenReady().then(() => {
         </html>`);
 
     setTimeout(() => loadAppURL(mainWindow), 2000);
+
+    // Assim que a janela estiver pronta, manda checar atualizações no GitHub
+    // (Isso só vai funcionar na versão empacotada .exe, no 'npm start' em dev ele ignora)
+    if (app.isPackaged) {
+        autoUpdater.checkForUpdatesAndNotify();
+    }
 });
 
 // Quando clicar no X, mata tudo perfeitamente
