@@ -1,0 +1,16 @@
+# Dependências (muito pesadas, o GitHub não aceita)
+node_modules/
+.venv/
+dist/
+
+# ARQUIVOS SENSÍVEIS E DE SEGURANÇA (NUNCA ENVIAR!)
+local_config.json
+sessions/
+error.log
+users.json
+*.pyc
+__pycache__/
+
+# Outros arquivos de sistema
+.DS_Store
+Thumbs.db

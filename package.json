@@ -1,0 +1,46 @@
+{
+  "name": "conectasf-bot",
+  "version": "1.0.0",
+  "description": "Robô do WhatsApp ConectaSF",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron main.js",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.conectasf.bot",
+    "productName": "ConectaSF Bot",
+    "asar": false,
+    "directories": {
+      "buildResources": "build"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ConectaSF Bot",
+      "runAfterFinish": true
+    }
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^7.0.0-rc.9",
+    "axios": "^1.13.6",
+    "cors": "^2.8.6",
+    "ejs": "^5.0.1",
+    "express": "^5.2.1",
+    "pino": "^10.3.1",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.3",
+    "ws": "^8.19.0"
+  },
+  "devDependencies": {
+    "electron": "^41.0.2",
+    "electron-builder": "^24.13.3"
+  }
+}

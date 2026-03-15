@@ -1,0 +1,51 @@
+<%- include('header') %>
+
+<div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
+    <div class="mb-6">
+        <h2 class="text-xl font-black text-gray-800 uppercase italic">Configuração de Conexão</h2>
+    </div>
+
+    <form method="POST" action="/settings" class="space-y-5">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">URL da API (Nuvem)</label>
+                <input type="text" name="DJANGO_HTTP_URL" value="<%= config.DJANGO_HTTP_URL %>" placeholder="https://conectasf.com.br/api" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-primary">
+            </div>
+            <div>
+                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">URL do Site (Cardápio)</label>
+                <input type="text" name="BASE_URL" value="<%= config.BASE_URL %>" placeholder="https://conectasf.com.br/loja" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-primary">
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">URL do Canal (WebSocket)</label>
+            <input type="text" name="DJANGO_WS_URL" value="<%= config.DJANGO_WS_URL %>" placeholder="wss://conectasf.com.br/ws/bot" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold outline-none focus:border-primary">
+        </div>
+
+        <div>
+            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Chave de Acesso (API Token)</label>
+            <input type="text" name="API_TOKEN" value="<%= config.API_TOKEN %>" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-mono text-blue-500 outline-none focus:border-blue-500">
+        </div>
+
+        <div class="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <span class="block font-black text-amber-800 text-xs uppercase">Modo de Teste</span>
+                    <span class="text-[10px] text-amber-600 font-bold uppercase">O robô só responderá aos números abaixo</span>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="MODO_TESTE" class="sr-only peer" <%= config.MODO_TESTE ? 'checked' : '' %>>
+                    <div class="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:bg-amber-500 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                </label>
+            </div>
+            <input type="text" name="NUMERO_TESTE" value="<%= config.NUMERO_TESTE %>" placeholder="Ex: 5522999999999" class="w-full bg-white border border-amber-200 rounded-xl px-4 py-3 text-sm font-bold text-amber-900 outline-none focus:border-amber-500">
+        </div>
+
+        <div class="pt-4 flex gap-3">
+            <button type="submit" class="flex-1 bg-gray-900 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-black transition shadow-lg">Salvar e Reiniciar</button>
+            <a href="/" class="px-6 py-4 text-gray-400 font-bold text-xs uppercase flex items-center hover:text-gray-700">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<%- include('footer') %>

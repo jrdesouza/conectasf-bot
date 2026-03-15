@@ -1,0 +1,168 @@
+<%- include('header') %>
+
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center p-4">
+    <div class="bg-white/80 backdrop-blur-sm p-6 rounded-3xl shadow-xl border border-white/40 w-full max-w-xl transition-all duration-500 hover:shadow-2xl">
+        <h2 class="text-xl font-black mb-6 flex items-center justify-center gap-2 text-gray-800">
+            <i data-lucide="smartphone" class="w-6 h-6 text-blue-600"></i>
+            <span class="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Status do WhatsApp</span>
+        </h2>
+
+        <div id="ui-container" class="flex flex-col items-center justify-center min-h-[280px] relative">
+            <!-- ESTADO: CARREGANDO -->
+            <div id="state-loading" class="flex flex-col items-center">
+                <div class="relative">
+                    <i data-lucide="loader-2" class="w-14 h-14 text-blue-600 animate-spin mb-3 drop-shadow-lg"></i>
+                    <div class="absolute inset-0 animate-ping opacity-20 rounded-full bg-blue-500"></div>
+                </div>
+                <h3 id="loading-title" class="text-xl font-extrabold text-gray-800">Iniciando...</h3>
+                <p id="loading-desc" class="text-gray-500 mt-1 text-sm font-medium">Conectando aos serviços locais.</p>
+            </div>
+
+            <!-- ESTADO: QR CODE -->
+            <div id="state-qr" class="hidden flex-col items-center animate-fadeIn">
+                <div class="relative mb-3">
+                    <img id="qrcode" class="border-4 border-white rounded-2xl shadow-lg hover:scale-105 transition-transform duration-300" width="220">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-3xl blur opacity-30"></div>
+                </div>
+                <h3 class="text-xl font-extrabold text-gray-800">Aguardando Leitura</h3>
+                <p class="text-gray-500 mt-1 text-sm font-medium">Abra o WhatsApp no celular e escaneie o código acima.</p>
+            </div>
+
+            <!-- ESTADO: TUDO CONECTADO -->
+            <div id="state-connected" class="hidden flex flex-col items-center justify-center animate-bounceIn">
+                <div class="w-24 h-24 bg-gradient-to-br from-green-400 to-emerald-500 text-white rounded-full flex items-center justify-center mb-4 shadow-2xl shadow-green-200">
+                    <i data-lucide="check-circle" class="w-12 h-12"></i>
+                </div>
+                <h3 class="text-2xl font-black text-gray-800">Sistema 100% Operacional</h3>
+                <p class="text-gray-500 mt-1 text-sm font-medium">WhatsApp conectado e Nuvem sincronizada.</p>
+            </div>
+        </div>
+
+        <!-- BARRA DE STATUS -->
+        <div id="status-bar" class="mt-6 text-sm font-semibold py-3 px-4 rounded-xl border transition-all duration-500 text-center bg-gray-50/80 border-gray-200/50 text-gray-500">
+            Verificando status...
+        </div>
+
+        <div class="mt-8 pt-5 border-t border-gray-200/50">
+            <a href="/settings" class="flex items-center justify-center gap-2 text-xs font-bold text-gray-400 uppercase tracking-widest hover:text-blue-600 transition-all duration-300 group">
+                <i data-lucide="settings-2" class="w-4 h-4 group-hover:rotate-180 transition-transform duration-700"></i>
+                Configurar Conexão e Site
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Mantido exatamente o mesmo script original -->
+<script>
+    // Agora o Socket puxa da porta de origem automaticamente (3000)
+    const socket = io({ reconnectionAttempts: 50, reconnectionDelay: 1500 });
+
+    const stateLoading = document.getElementById('state-loading');
+    const stateQr = document.getElementById('state-qr');
+    const stateConnected = document.getElementById('state-connected');
+    const statusBar = document.getElementById('status-bar');
+
+    function showState(state) {
+        stateLoading.classList.add('hidden');
+        stateQr.classList.add('hidden');
+        stateConnected.classList.add('hidden');
+
+        if (state === 'loading') stateLoading.classList.remove('hidden');
+        if (state === 'qr') stateQr.classList.remove('hidden');
+        if (state === 'connected') stateConnected.classList.remove('hidden');
+    }
+
+    function setStatusBar(text, colorClass) {
+        statusBar.innerText = text;
+        statusBar.className = `mt-6 text-sm font-semibold py-3 px-4 rounded-xl border transition-all duration-500 text-center ${colorClass}`;
+    }
+
+    socket.on("connect_error", () => {
+        showState('loading');
+        document.getElementById('loading-title').innerText = "Servidor Offline";
+        document.getElementById('loading-desc').innerText = "Aguardando o robô iniciar em segundo plano...";
+        document.querySelector('#state-loading i').classList.replace('text-blue-500', 'text-red-500');
+        setStatusBar("Erro Crítico: Robô Desligado", "text-red-600 bg-red-50 border-red-200");
+    });
+
+    socket.on("connect", () => {
+        const icon = document.querySelector('#state-loading i');
+        icon.classList.remove('text-red-500', 'text-orange-500');
+        icon.classList.add('text-blue-500');
+    });
+
+    socket.on("status_update", (data) => {
+        const { status, qr } = data;
+
+        if (status === "starting") {
+            showState('loading');
+            document.getElementById('loading-title').innerText = "Iniciando Baileys...";
+            document.getElementById('loading-desc').innerText = "Preparando chaves de segurança do WhatsApp.";
+            setStatusBar("Ligando motor...", "text-blue-600 bg-blue-50 border-blue-200");
+        }
+        else if (status === "connecting") {
+            showState('loading');
+            document.getElementById('loading-title').innerText = "Sincronizando Celular...";
+            document.getElementById('loading-desc').innerText = "Trocando dados com o WhatsApp.";
+            setStatusBar("Conectando ao WhatsApp...", "text-amber-600 bg-amber-50 border-amber-200");
+        }
+        else if (status === "qr") {
+            showState('qr');
+            document.getElementById('qrcode').src = qr;
+            setStatusBar("Aguardando QR Code", "text-blue-600 bg-blue-50 border-blue-200");
+        }
+        else if (status === "cloud_connecting") {
+            showState('loading');
+            document.getElementById('loading-title').innerText = "Conectando à Nuvem...";
+            document.getElementById('loading-desc').innerText = "O WhatsApp conectou! Agora estamos sincronizando com o Painel Web.";
+            setStatusBar("Conectando à Nuvem...", "text-blue-600 bg-blue-50 border-blue-200");
+        }
+        else if (status === "cloud_disconnected") {
+            showState('loading');
+            document.getElementById('loading-title').innerText = "Nuvem Offline / Erro";
+            document.getElementById('loading-desc').innerText = "O WhatsApp está funcionando, mas a conexão com o servidor caiu. Reconectando...";
+            document.querySelector('#state-loading i').classList.replace('text-blue-500', 'text-orange-500');
+            setStatusBar("Tentando reconectar à Nuvem...", "text-orange-600 bg-orange-50 border-orange-200");
+        }
+        else if (status === "connected") {
+            showState('connected');
+            setStatusBar("Tudo Perfeito! Robô e Nuvem rodando.", "text-green-600 bg-green-50 border-green-200");
+        }
+        else if (status === "reconnecting") {
+            showState('loading');
+            document.getElementById('loading-title').innerText = "Celular sem Sinal";
+            document.getElementById('loading-desc').innerText = "A internet caiu ou o aparelho deslogou. Reconectando...";
+            document.querySelector('#state-loading i').classList.replace('text-blue-500', 'text-orange-500');
+            setStatusBar("Reconectando WhatsApp...", "text-orange-600 bg-orange-50 border-orange-200");
+        }
+        else if (status === "disconnected") {
+            showState('loading');
+            document.getElementById('loading-title').innerText = "Sessão Encerrada";
+            document.getElementById('loading-desc').innerText = "O aparelho foi desconectado. Gerando novo QR Code...";
+            document.querySelector('#state-loading i').classList.replace('text-blue-500', 'text-red-500');
+            setStatusBar("Aparelho Desconectado", "text-red-600 bg-red-50 border-red-200");
+        }
+    });
+</script>
+
+<!-- Animações customizadas -->
+<style>
+    @keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    .animate-fadeIn {
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    @keyframes bounceIn {
+        0% { opacity: 0; transform: scale(0.3); }
+        50% { opacity: 1; transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+    .animate-bounceIn {
+        animation: bounceIn 0.5s ease;
+    }
+</style>
+
+<%- include('footer') %>
