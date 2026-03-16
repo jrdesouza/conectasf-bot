@@ -1,11 +1,12 @@
 {
   "name": "conectasf-bot",
-  "version": "2.0.0",
+  "version": "1.0.1",
   "description": "Robô do WhatsApp ConectaSF",
   "main": "main.js",
   "scripts": {
     "start": "electron main.js",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "deploy": "electron-builder --publish always"
   },
   "build": {
     "appId": "com.conectasf.bot",
@@ -18,13 +19,18 @@
       "**/*",
       "!.venv/**/*",
       "!__pycache__/**/*",
-      "!*.py"
+      "!*.py",
+      "!local_config.json",
+      "!anote.txt",
+      "!sessions/**/*",
+      "!users.json",
+      "!error.log"
     ],
     "publish":[
       {
         "provider": "github",
         "owner": "jrdesouza",
-        "repo": "https://github.com/jrdesouza/conectasf-bot.git"
+        "repo": "conectasf-bot"
       }
     ],
     "win": {
@@ -53,8 +59,10 @@
     "socket.io": "^4.8.3",
     "ws": "^8.19.0"
   },
+
   "devDependencies": {
     "electron": "^41.0.2",
     "electron-builder": "^24.13.3"
   }
 }
+

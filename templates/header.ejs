@@ -7,19 +7,41 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Definindo a cor personalizada */
+        .bg-custom-blue { background-color: rgb(0, 145, 246); }
+    </style>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen font-sans">
-    <nav class="bg-white shadow-sm border-b border-gray-200">
+    <!-- Navbar com a cor azul solicitada -->
+    <nav class="bg-custom-blue shadow-lg border-b border-blue-600 text-white">
         <div class="max-w-3xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-2">
-                <div class="bg-green-500 text-white p-2 rounded-lg"><i data-lucide="bot"></i></div>
-                <h1 class="font-bold text-xl tracking-tight">ConectaSF <span class="text-xs bg-gray-200 px-2 py-0.5 rounded text-gray-500">Local</span></h1>
+            <div class="flex items-center gap-3">
+                <!-- Ícone com fundo branco para destacar no azul -->
+                <div class="bg-white text-[#0091f6] p-2 rounded-lg shadow-inner">
+                    <i data-lucide="bot"></i>
+                </div>
+                <div>
+                    <h1 class="font-black text-xl tracking-tight leading-none">
+                        ConectaSF
+                        <span class="ml-1 text-[10px] bg-blue-800/30 px-2 py-0.5 rounded text-blue-100 uppercase tracking-widest">Local</span>
+                    </h1>
+                    <!-- Exibição da Versão -->
+                    <p class="text-[10px] font-bold text-blue-100/80 uppercase tracking-tighter">Versão <%= appVersion %></p>
+                </div>
             </div>
-            <div class="flex gap-4 text-sm font-medium">
-                <span class="flex items-center gap-1 text-gray-400">
-                    <i data-lucide="cloud"></i> Sincronizado com a Nuvem
+
+            <div class="flex items-center gap-4 text-xs font-black uppercase tracking-widest">
+                <span class="flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-full border border-white/20">
+                    <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                    Nuvem Ativa
                 </span>
             </div>
         </div>
     </nav>
+
     <main class="max-w-2xl mx-auto p-6">
+    <script>
+        // Inicializa os ícones da Lucide
+        lucide.createIcons();
+    </script>
