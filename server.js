@@ -82,7 +82,7 @@ function getLocalConfig() {
             // URLs derivadas automaticamente
             DJANGO_HTTP_URL: rawBase ? `${rawBase}/api` : "",               // para chamadas REST
             DJANGO_WS_URL: wsBase ? `${wsBase}/ws/bot` : "",                // para WebSocket
-            CARDAPIO_URL: rawBase ? `${rawBase}/loja` : "",                 // link público do cardápio
+            CARDAPIO_URL: rawBase ? `${rawBase}/loja` : "",                 // link público do cardápio (ainda usado em outras partes)
 
             // Dados originais
             BASE_URL: rawBase,
@@ -356,6 +356,7 @@ async function createSession(sessionId = "default") {
 
         if (!botConfig.bot_active) return;
 
+        // Verifica se a mensagem contém um pedido para confirmação
         const matchPedido = text.match(/pedido\s*#(\d+)/i);
         if (matchPedido) {
             const numeroPedido = matchPedido[1];
@@ -372,12 +373,15 @@ async function createSession(sessionId = "default") {
             return;
         }
 
+        // ===== NOVA LÓGICA: envio automático da saudação + menu =====
         const now = Date.now();
         if (!userStates[remoteJid]) userStates[remoteJid] = { lastSeen: 0, pausedUntil: 0, lastClosedMsg: 0 };
         const user = userStates[remoteJid];
 
+        // Se o usuário estiver pausado (por qualquer motivo), não faz nada
         if (user.pausedUntil > now) return;
 
+        // Se o estabelecimento estiver fechado, envia a mensagem de fechado (apenas uma vez a cada 12h)
         if (!botConfig.is_open) {
             if (now - user.lastClosedMsg > 12 * 60 * 60 * 1000) {
                 try {
@@ -390,26 +394,21 @@ async function createSession(sessionId = "default") {
         }
 
         const isNewSession = (now - user.lastSeen > 12 * 60 * 60 * 1000);
-        user.lastSeen = now;
-        saveUserStates();
 
-        try {
-            if (text === '1') {
-                // Usamos a CARDAPIO_URL + slug do estabelecimento
-                const cardapioLink = `${config.CARDAPIO_URL}/${botConfig.slug}`;
-                await sock.sendMessage(remoteJid, {
-                    text: `🍔 *BEM-VINDO AO NOSSO CARDÁPIO!*\nExplore nossas opções e escolha o que vai matar sua fome hoje 😋\n\n━━━━━━━━━━━━━━━\n📋 *Ver Cardápio:*\n🔗 ${cardapioLink}\n━━━━━━━━━━━━━━━\n\n🛒 Pedido rápido • Fácil • Prático`
-                });
-            } else if (text === '2') {
-                await sock.sendMessage(remoteJid, { text: botConfig.human_message });
-                user.pausedUntil = now + (2 * 60 * 60 * 1000);
-                saveUserStates();
-            } else {
-                if (isNewSession) await sock.sendMessage(remoteJid, { text: botConfig.greeting_message });
-            }
-        } catch (e) {
-            logAppError('Enviar Msg Menu Principal', e);
+        if (isNewSession) {
+            user.lastSeen = now;
+            saveUserStates();
+
+            const baseUrl = config.BASE_URL.replace(/\/+$/, '');
+            const menuLink = `${baseUrl}/loja/${botConfig.slug}`;
+
+            // Substitui {link} pelo URL real do cardápio, conforme configurado no painel
+            const textMenu = botConfig.menu_text.replace("{link}", menuLink);
+            const fullMessage = `${botConfig.greeting_message}\n\n${textMenu}`;
+
+            await sock.sendMessage(remoteJid, { text: fullMessage });
         }
+        // =============================================================
     });
 }
 

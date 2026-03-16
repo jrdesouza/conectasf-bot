@@ -119,8 +119,8 @@ function loadAppURL(win) {
 
 app.whenReady().then(() => {
     mainWindow = new BrowserWindow({
-        width: 850,
-        height: 700,
+        width: 690,
+        height: 855,
         minWidth: 600,
         minHeight: 700,
         title: "ConectaSF - Bot WhatsApp",
