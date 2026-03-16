@@ -11,7 +11,7 @@
   "build": {
     "appId": "com.conectasf.bot",
     "productName": "ConectaSF Bot",
-    "asar": true,
+    "asar": false,
     "directories": {
       "buildResources": "build"
     },
