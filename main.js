@@ -50,23 +50,23 @@
 const { app, BrowserWindow, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
 
-// Inicia o Backend Unificado
-require('./server.js');
+// Inicia o Backend Unificado e importa o io (socket.io) que ele exporta
+const { io } = require('./server.js'); // <-- NOVO: importa o io
 
 let mainWindow;
 
 // --- CONFIGURAÇÃO DO AUTO-UPDATER ---
-autoUpdater.autoDownload = true; // Baixa a atualização em segundo plano sozinho
-autoUpdater.autoInstallOnAppQuit = true; // Instala quando o app for fechado (se o usuário ignorar o aviso)
+autoUpdater.autoDownload = true;
+autoUpdater.autoInstallOnAppQuit = true;
 
 // Evento: Quando encontra uma nova atualização
 autoUpdater.on('update-available', () => {
     console.log('Nova atualização encontrada. Baixando em segundo plano...');
+    io.emit('update-status', { status: 'downloading' }); // <-- NOVO
 });
 
 // Evento: Quando termina de baixar a atualização
 autoUpdater.on('update-downloaded', () => {
-    // Exibe um pop-up nativo do Windows avisando o cliente
     dialog.showMessageBox(mainWindow, {
         type: 'info',
         title: 'Atualização Pronta',
@@ -74,20 +74,46 @@ autoUpdater.on('update-downloaded', () => {
         detail: 'O aplicativo será reiniciado agora para aplicar as melhorias.',
         buttons:['Reiniciar e Atualizar']
     }).then(() => {
-        // Fecha o app e instala a nova versão
         autoUpdater.quitAndInstall(false, true);
     });
+
+    io.emit('update-status', { status: 'downloaded' }); // <-- NOVO
+});
+
+// Evento: Quando NÃO há atualizações <-- NOVO
+autoUpdater.on('update-not-available', () => {
+    console.log('Nenhuma atualização disponível');
+    io.emit('update-status', { status: 'latest' });
+});
+
+// Evento: Erro na busca <-- NOVO
+autoUpdater.on('error', (err) => {
+    console.error('Erro no Auto-Updater:', err.message);
+    io.emit('update-status', { status: 'error', message: err.message });
 });
 
 // Evento: Se der algum erro (ex: sem internet), ele só ignora e o app segue normal
-autoUpdater.on('error', (err) => {
-    console.error('Erro no Auto-Updater:', err.message);
-});
+// (Este já existia, mas substituímos pelo listener acima; mantenha apenas um)
+// O listener de erro acima substitui este, então você pode remover o antigo ou manter ambos.
+// Vou deixar apenas o novo que emite para a interface.
+
 // ------------------------------------
+
+// Escuta o pedido vindo do server.js (via process.emit) <-- NOVO
+process.on('manual-update-check', () => {
+    console.log('Verificando atualizações manualmente...');
+    if (app.isPackaged) {
+        autoUpdater.checkForUpdatesAndNotify();
+    } else {
+        console.log("Modo dev: Ignorando busca de atualização.");
+        // Em ambiente de desenvolvimento, podemos simular um status ou apenas ignorar
+        io.emit('update-status', { status: 'dev' }); // Opcional
+    }
+});
 
 function loadAppURL(win) {
     win.loadURL('http://localhost:3000').catch(() => {
-        setTimeout(() => loadAppURL(win), 1500); // Tenta de novo se não subiu ainda
+        setTimeout(() => loadAppURL(win), 1500);
     });
 }
 
@@ -113,14 +139,12 @@ app.whenReady().then(() => {
 
     setTimeout(() => loadAppURL(mainWindow), 2000);
 
-    // Assim que a janela estiver pronta, manda checar atualizações no GitHub
-    // (Isso só vai funcionar na versão empacotada .exe, no 'npm start' em dev ele ignora)
+    // Verificação automática ao iniciar (se estiver empacotado)
     if (app.isPackaged) {
         autoUpdater.checkForUpdatesAndNotify();
     }
 });
 
-// Quando clicar no X, mata tudo perfeitamente
 app.on('window-all-closed', () => {
     app.quit();
 });

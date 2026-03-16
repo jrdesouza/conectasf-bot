@@ -2,7 +2,7 @@
 
 <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200">
     <div class="mb-6">
-        <h2 class="text-xl font-black text-gray-800 uppercase italic">Configuração Simplificada</h2>
+        <h2 class="text-xl font-black text-gray-800 uppercase italic">Configuração</h2>
         <p class="text-gray-500 text-xs font-bold uppercase">Configure o acesso à nuvem ConectaSF</p>
     </div>
 
@@ -66,5 +66,49 @@
     </details>
 </div>
 <% } %>
+
+<!-- SEÇÃO DE VERSÃO E ATUALIZAÇÃO (NOVA) -->
+<div class="mt-6 p-6 bg-blue-50 rounded-2xl border border-blue-100 flex items-center justify-between">
+    <div>
+        <h4 class="text-blue-900 font-black text-xs uppercase">Versão do Sistema</h4>
+        <p id="updateStatus" class="text-blue-700 text-[10px] font-bold uppercase tracking-tight">Você está usando a versão v<%= appVersion %></p>
+    </div>
+    <button id="btnCheckUpdate" onclick="checkUpdate()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-black text-[10px] uppercase hover:bg-blue-700 transition shadow-md">
+        Verificar Atualização
+    </button>
+</div>
+
+<script>
+    function checkUpdate() {
+        const btn = document.getElementById('btnCheckUpdate');
+        const statusText = document.getElementById('updateStatus');
+
+        btn.disabled = true;
+        btn.innerHTML = "Buscando...";
+        statusText.innerHTML = "Conectando ao servidor de atualizações...";
+
+        fetch('/check-update')
+            .then(res => res.json())
+            .then(data => {
+                // O feedback real virá via Socket.io ou após alguns segundos
+                setTimeout(() => {
+                    btn.disabled = false;
+                    btn.innerHTML = "Verificar Atualização";
+                }, 5000);
+            });
+    }
+
+    // Escutando o feedback do Socket.io
+    const socket = io();
+    socket.on('status_update', (data) => {
+        // Você já tem esse evento, pode aproveitar para atualizar o status aqui também
+    });
+
+    // Se você implementar o envio de status específico:
+    socket.on('update_not_available', () => {
+        alert("Você já está na versão mais recente!");
+        document.getElementById('updateStatus').innerHTML = "Sistema atualizado: v<%= appVersion %>";
+    });
+</script>
 
 <%- include('footer') %>

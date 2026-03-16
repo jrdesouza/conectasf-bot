@@ -21,10 +21,10 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-// ===== NOVO: Carrega a versão do package.json e disponibiliza globalmente =====
+// ===== Carrega a versão do package.json e disponibiliza globalmente =====
 const pkg = require('./package.json');
 app.locals.appVersion = pkg.version;   // Agora disponível em todas as views EJS como appVersion
-// ===============================================================================
+// =========================================================================
 
 // Configuração do Express
 app.use(cors());
@@ -57,12 +57,19 @@ process.on('unhandledRejection', (reason) => {
 });
 // ===========================================
 
+/**
+ * Lê as configurações do arquivo local_config.json
+ * Agora espera apenas: BASE_URL, API_TOKEN, NUMERO_TESTE, MODO_TESTE
+ * As URLs da API e WebSocket são derivadas automaticamente.
+ */
 function getLocalConfig() {
     try {
         const data = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
 
+        // Remove barra final se existir
         const rawBase = data.BASE_URL ? data.BASE_URL.replace(/\/$/, "") : "";
 
+        // Converte http:// → ws://  e https:// → wss://
         const wsProtocol = rawBase.startsWith("https") ? "wss" : "ws";
         const wsBase = rawBase.replace(/^https?/, wsProtocol);
 
@@ -72,10 +79,12 @@ function getLocalConfig() {
             .filter(id => id.length > 0);
 
         return {
-            DJANGO_HTTP_URL: rawBase ? `${rawBase}/api` : "",
-            DJANGO_WS_URL: wsBase ? `${wsBase}/ws/bot` : "",
-            CARDAPIO_URL: rawBase ? `${rawBase}/loja` : "",
+            // URLs derivadas automaticamente
+            DJANGO_HTTP_URL: rawBase ? `${rawBase}/api` : "",               // para chamadas REST
+            DJANGO_WS_URL: wsBase ? `${wsBase}/ws/bot` : "",                // para WebSocket
+            CARDAPIO_URL: rawBase ? `${rawBase}/loja` : "",                 // link público do cardápio
 
+            // Dados originais
             BASE_URL: rawBase,
             API_TOKEN: data.API_TOKEN || "",
             NUMERO_TESTE: data.NUMERO_TESTE || "",
@@ -106,6 +115,7 @@ app.get("/settings", (req, res) => {
 });
 
 app.post("/settings", (req, res) => {
+    // Agora só salvamos os campos necessários
     const newConfig = {
         BASE_URL: req.body.BASE_URL ? req.body.BASE_URL.replace(/\/$/, "") : "",
         API_TOKEN: req.body.API_TOKEN || "",
@@ -115,11 +125,19 @@ app.post("/settings", (req, res) => {
 
     fs.writeFileSync(CONFIG_PATH, JSON.stringify(newConfig, null, 4));
 
+    // Reconecta à nuvem com as novas configurações, se houver sessão ativa
     if (sessions["default"]) {
         connectToDjangoCloud(sessions["default"]);
     }
 
     res.redirect("/");
+});
+
+// ==================== ROTA PARA VERIFICAÇÃO MANUAL DE ATUALIZAÇÃO ====================
+app.get("/check-update", (req, res) => {
+    // Dispara um evento global que o main.js do Electron pode escutar
+    process.emit('manual-update-check');
+    res.json({ success: true, message: "Verificação de atualização iniciada." });
 });
 
 // ==================== WHATSAPP E WEBSOCKETS ====================
@@ -137,6 +155,7 @@ let cloudStatus = "disconnected";
 let currentQr = null;
 let djangoWs = null;
 
+// Controle de reconexão inteligente (Exponential Backoff)
 let cloudReconnectDelay = 5000;
 const MAX_RECONNECT_DELAY = 120000;
 
@@ -376,6 +395,7 @@ async function createSession(sessionId = "default") {
 
         try {
             if (text === '1') {
+                // Usamos a CARDAPIO_URL + slug do estabelecimento
                 const cardapioLink = `${config.CARDAPIO_URL}/${botConfig.slug}`;
                 await sock.sendMessage(remoteJid, {
                     text: `🍔 *BEM-VINDO AO NOSSO CARDÁPIO!*\nExplore nossas opções e escolha o que vai matar sua fome hoje 😋\n\n━━━━━━━━━━━━━━━\n📋 *Ver Cardápio:*\n🔗 ${cardapioLink}\n━━━━━━━━━━━━━━━\n\n🛒 Pedido rápido • Fácil • Prático`
@@ -401,3 +421,6 @@ server.listen(PORT, () => {
     if (!fs.existsSync(sessionsDir)) fs.mkdirSync(sessionsDir);
     createSession("default");
 });
+
+// Exporta o io para que outros módulos (como o main.js do Electron) possam usá-lo
+module.exports = { io };

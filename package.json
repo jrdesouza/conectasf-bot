@@ -1,6 +1,6 @@
 {
   "name": "conectasf-bot",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Robô do WhatsApp ConectaSF",
   "main": "main.js",
   "scripts": {
@@ -11,7 +11,7 @@
   "build": {
     "appId": "com.conectasf.bot",
     "productName": "ConectaSF Bot",
-    "asar": false,
+    "asar": true,
     "directories": {
       "buildResources": "build"
     },
